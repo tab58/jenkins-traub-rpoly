@@ -1,0 +1,32 @@
+{
+  "dependencies": {
+    "synthetic-division": "^1.0.1"
+  },
+  "name": "jenkins-traub",
+  "description": "Implementation of three-stage Jenkins-Traub algorithm for real polynomials using quadratic iteration.",
+  "version": "0.0.0",
+  "main": "index.js",
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^4.0.1"
+  },
+  "scripts": {
+    "test": "node_modules/.bin/_mocha ./test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tab58/jenkins-traub.git"
+  },
+  "keywords": [
+    "jenkins",
+    "traub",
+    "root",
+    "finder"
+  ],
+  "author": "Tim Bright",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tab58/jenkins-traub/issues"
+  },
+  "homepage": "https://github.com/tab58/jenkins-traub#readme"
+}
