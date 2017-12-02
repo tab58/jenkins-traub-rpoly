@@ -1,4 +1,4 @@
-# jenkins-traub
+# jenkins-traub-rpoly
 Implementation of three-stage Jenkins-Traub algorithm for real polynomials using quadratic iteration.
 
 # Motivation
