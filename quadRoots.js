@@ -1,5 +1,10 @@
 'use strict';
 
+/**
+ * The code for this quadratic equation solver was taken from pseudocode by William Kahan.
+ * The notes can be found here: http://people.eecs.berkeley.edu/~wkahan/Math128/Cubic.pdf.
+ */
+
 const _Math = Math;
 
 function nearestInt (n) {

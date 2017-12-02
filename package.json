@@ -2,9 +2,9 @@
   "dependencies": {
     "synthetic-division": "^1.0.1"
   },
-  "name": "jenkins-traub",
+  "name": "jenkins-traub-rpoly",
   "description": "Implementation of three-stage Jenkins-Traub algorithm for real polynomials using quadratic iteration.",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "main": "index.js",
   "devDependencies": {
     "chai": "^4.1.2",

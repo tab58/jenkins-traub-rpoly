@@ -5,19 +5,15 @@ const {
   hornerPolyEval,
   hornerComplexPolyEval,
   scalePolynomial,
-  computePolyDeriv,
-  copyPolynomial,
-  addPolynomials
+  computePolyDeriv
 } = require('./polynomial.js');
 const Complex = require('./complex.js');
-const synthDiv = require('synthetic-division');
 const qdrtc = require('./quadRoots.js');
+const synthDiv = require('synthetic-division');
 
 const DEG2RAD = _Math.PI / 180;
-const XX = _Math.cos(94 * DEG2RAD);
-const YY = _Math.sin(94 * DEG2RAD);
-const X0 = _Math.cos(49 * DEG2RAD);
-const Y0 = _Math.sin(49 * DEG2RAD);
+const PHI_INC = 94 * DEG2RAD;
+const PHI_START = 49 * DEG2RAD;
 
 /**
  * Computes a single Newton-Raphson iteration from the guess.
@@ -247,21 +243,6 @@ const hasComplexRootConverged = function (croots, i) {
   return false;
 };
 
-// /**
-//  * The absolute root tolerance, i.e. if P(z) is below this, it's a root.
-//  */
-// const ABSOLUTE_ROOT_TOLERANCE = 1e-15;
-
-// /**
-//  * The relative root tolerance. Used to test for convergence.
-//  */
-// const RELATIVE_ROOT_TOLERANCE = 1e-10;
-
-// /**
-//  * The tolerance of magnitude of the root for it to be considered a root.
-//  */
-// const ROOT_MAGNITUDE_TOLERANCE = 1e-4;
-
 /**
  * Ward's stopping criterion as described in "New stopping criteria for iterative root finding"
  * by Nikolajsen, Jorgen L., Royal Society open science (2014).
@@ -275,14 +256,6 @@ const wardCriterion = function (ei, ei1, magRoot) {
     return ei >= ei1;
   }
   return false;
-  // if (ei <= ei1) {
-  //   if (magRoot < ROOT_MAGNITUDE_TOLERANCE) {
-  //     return ei < ABSOLUTE_ROOT_TOLERANCE;
-  //   } else {
-  //     return ei / magRoot <= RELATIVE_ROOT_TOLERANCE;
-  //   }
-  // }
-  // return false;
 };
 
 /**
@@ -313,7 +286,6 @@ const computeLinearVariableShift = function (K0, P, sL, L) {
     K[0] = t * Qp[0]; // assumes P[0] = 1
     sReal -= PsReal * K[0] / hornerPolyEval(K, sReal);
 
-    // TODO: find convergence criteria
     if (hasRealRootConverged(rootApproximations, k)) {
       const root = rootApproximations[(k - 1) % 3];
       return {
@@ -336,8 +308,10 @@ const computeQuadraticVariableShift = function (K0, P, sigmaLambda, L) {
   let sigmaL = sigmaLambda.slice();
   let uLambda = sigmaL[1];
   let vLambda = sigmaL[2];
-  const rootApproximations = [];
-  const s = new Complex(0, 0);
+  const root1Approximations = [];
+  const root2Approximations = [];
+  const s1 = new Complex(0, 0);
+  const s2 = new Complex(0, 0);
   for (let i = 0; i < 10 * L; ++i) {
     const { q: Qp, r: remP } = synthDiv(P, sigmaL);
     const b = remP.length > 1 ? remP[0] : 0;
@@ -348,16 +322,28 @@ const computeQuadraticVariableShift = function (K0, P, sigmaLambda, L) {
 
     const [, uLambda1, vLambda1] = computeSigmaEstimate(a, b, c, d, uLambda, vLambda, K, P);
     const K1 = computeNextFixedShiftK(K, Qp, Qk, a, b, c, d, uLambda1, vLambda1);
-    const [sx1, sy1] = qdrtc(1, uLambda1, vLambda1);
-    s.real = sx1;
-    s.imag = sy1;
-    rootApproximations[i % 3] = s.clone();
-    if (hasComplexRootConverged(rootApproximations, i)) {
+    const [sx1, sy1, sx2, sy2] = qdrtc(1, uLambda1, vLambda1);
+    s1.real = sx1;
+    s1.imag = sy1;
+    s2.real = sx2;
+    s2.imag = sy2;
+    root1Approximations[i % 3] = s1.clone();
+    root2Approximations[i % 3] = s2.clone();
+    const Ps1 = hornerComplexPolyEval(P, s1).abs();
+    const Ps2 = hornerComplexPolyEval(P, s2).abs();
+    if (Ps1 < 1e-15 && Ps2 < 1e-15) {
+      return {
+        roots: [s1, s2],
+        sigma: sigmaL
+      };
+    }
+    if (hasComplexRootConverged(root1Approximations, i) && hasComplexRootConverged(root2Approximations, i)) {
       // const Ps1 = hornerComplexPolyEval(P, rootApproximations[i % 3]).abs();
       // const Ps2 = hornerComplexPolyEval(P, rootApproximations[(i - 1) % 3]).abs();
-      const root = rootApproximations[(i - 1) % 3];
+      const r1 = root1Approximations[(i - 1) % 3];
+      const r2 = root2Approximations[(i - 1) % 3];
       return {
-        roots: [root.clone(), root.clone().conj()],
+        roots: [r1.clone(), r2.clone().conj()],
         sigma: sigmaL
       };
     }
@@ -402,8 +388,9 @@ module.exports = function jenkinsTraub (OP) {
       // get the base K-polynomial
       let KL = KM.slice();
       // choose a root on the radius
-      const x = rootRadius * (X0 + k * XX);
-      const y = rootRadius * (Y0 + k * YY);
+      const phi = PHI_START + k * PHI_INC;
+      const x = rootRadius * _Math.cos(phi);
+      const y = rootRadius * _Math.sin(phi);
       // const x = 0.042019;
       // const y = 0.1836611;
       const s = new Complex(x, y);
@@ -493,6 +480,14 @@ module.exports = function jenkinsTraub (OP) {
     zeros.push.apply(zeros, roots);
     n -= roots.length;
     ({ q: P } = synthDiv(P, polyFactor));
+  }
+  if (n === 1) {
+    // solve linear factor
+    zeros.push(new Complex(-P[1] / P[0], 0));
+  } else {
+    // solve quadratic factor
+    const [sx1, sy1, sx2, sy2] = qdrtc(P[0], P[1], P[2]);
+    zeros.push(new Complex(sx1, sy1), new Complex(sx2, sy2));
   }
   return zeros;
 };

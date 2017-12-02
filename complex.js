@@ -1,5 +1,11 @@
 'use strict';
 
+/**
+ * Complex.js -- a very minimal interpretation of complex numbers.
+ * This is here purely for ease of computation.
+ * This can be refactored out eventually since all the math can be done in real arithmetic.
+ */
+
 const _Math = Math;
 
 /**
