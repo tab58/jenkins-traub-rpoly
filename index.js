@@ -285,7 +285,12 @@ const computeLinearVariableShift = function (K0, P, sL, L) {
     }
     K[0] = t * Qp[0]; // assumes P[0] = 1
     sReal -= PsReal * K[0] / hornerPolyEval(K, sReal);
-
+    const Ps1 = hornerPolyEval(P, sReal);
+    if (Ps1 < 1e-15) {
+      return {
+        roots: [new Complex(sReal, 0)]
+      };
+    }
     if (hasRealRootConverged(rootApproximations, k)) {
       const root = rootApproximations[(k - 1) % 3];
       return {
@@ -416,13 +421,12 @@ module.exports = function jenkinsTraub (OP) {
         let c, d, Qk, remK;
         // start iteration of the K-polynomials
         for (let i = 0; i <= STAGE2_LIMIT; ++i) {
-          scalePolynomial(KL, 1.0 / KL[0]);
           ({ q: Qk, r: remK } = synthDiv(KL, sigma));
           d = remK.length > 1 ? remK[0] : 0;
           c = (remK.length > 1 ? remK[1] : remK[0]) - d * u;
           // get linear termination criteria
           const kAtRoot = new Complex(c - d * s.real, d * s.imag); // c - d * s2
-          const t = s.clone().sub(pAtRoot.clone().divide(kAtRoot));
+          const t = s.clone().sub(pAtRoot.clone().scale(KL[0]).divide(kAtRoot));
           tLambdas[i % 3] = t;
           convergingToLinear = hasLinearConverged(tLambdas, i);
 
